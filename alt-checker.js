@@ -59,6 +59,27 @@ export default class AltChecker extends DiscordBasePlugin {
                 description: 'BattleMetrics server ID to check bans against',
                 default: '',
                 example: 'YOUR_SERVER_ID'
+            },
+            showCBLInfo: {
+                required: false,
+                description: 'Show Community Ban List information',
+                default: true
+            },
+            showCheaterBans: {
+                required: false,
+                description: 'Show Cheater Bans information',
+                default: true
+            },
+            enableCheaterAltKicks: {
+                required: false,
+                description: 'Enable kicking cheater alts',
+                default: false
+            },
+            adminChatChannelID: {
+                required: false,
+                description: 'The ID of the admin chat channel to log data.',
+                default: '',
+                example: 'admin_chat_channel_id_here'
             }
         };
     }
