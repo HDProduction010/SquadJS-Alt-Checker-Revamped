@@ -1,6 +1,6 @@
 # AltChecker Plugin
 
-AltChecker is a Discord and game server integration plugin designed to check for alternate accounts, detect cheater bans, and manage player interactions efficiently. This plugin leverages BattleMetrics and the Community Ban List to provide comprehensive alt-checking capabilities.
+AltChecker is a Discord and game server integration plugin designed to check for alternate accounts, detect cheater bans, and manage player interactions efficiently. This plugin uses BattleMetrics and the Community Ban List to provide better alt-checking.
 
 ## Features
 
