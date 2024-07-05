@@ -55,7 +55,6 @@ To get a BattleMetrics API key:
 6. Create a new token and give it a name.
    ![Create Token](https://i.imgur.com/1CFFqYD.png)
 7. Ensure the token has the ability to view bans.
-   ![Grant API Permission](https://i.imgur.com/8kOREUz.png)
 8. Copy the generated token and use it in your `config.json`.
 
 
