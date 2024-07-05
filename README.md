@@ -24,9 +24,9 @@ AltChecker is a Discord and game server integration plugin designed to check for
 
 Use the command prefix defined in the configuration to check for alts and ban information. For example:
 
-    ```sh
+    
     !altcheck 76561198000000000
-    ```
+    
 
 ### License
 
