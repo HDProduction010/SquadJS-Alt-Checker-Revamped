@@ -52,11 +52,11 @@ To get a BattleMetrics API key:
 7. Ensure the token has the ability to view bans and players.
 8. Copy the generated token and use it in your `config.json`.
 
-![User Icon](https://imgur.com/jDV7pUB)
-![BattleMetrics Account Management](https://imgur.com/n5oHRbO)
-![Manage Access Tokens](https://imgur.com/9Vf8UaE)
-![Create Token](https://imgur.com/1CFFqYD)
-![Grant API Permission](https://imgur.com/8kOREUz)
+![User Icon](https://i.imgur.com/nOCza7P.png)
+![BattleMetrics Account Management](https://i.imgur.com/n5oHRbO.png)
+![Manage Access Tokens](https://i.imgur.com/9Vf8UaE.png)
+![Create Token](https://i.imgur.com/1CFFqYD.png)
+![Grant API Permission](https://i.imgur.com/8kOREUz.png)
 
 #### BattleMetrics Server ID
 
@@ -66,7 +66,7 @@ To find your BattleMetrics server ID:
 2. Go to your servers homepage.
 3. In the servers tab under Squad, locate the eight-digit number in the search bar after `/squad`. This is your server ID for BattleMetrics.
 
-![Server ID](https://imgur.com/FaRiuWr)
+![Server ID](https://i.imgur.com/FaRiuWr.png)
 
 
 ### Usage
