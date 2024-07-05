@@ -19,7 +19,7 @@ AltChecker is a Discord and game server integration plugin designed to check for
 - BattleMetrics API key.
 - Community Ban List access.
 
-`
+```json
 {
     "plugin": "AltChecker",
     "enabled": true,
@@ -35,7 +35,8 @@ AltChecker is a Discord and game server integration plugin designed to check for
     "showCheaterBans": true,
     "enableCheaterAltKicks": true,
     "adminChatChannelID": "your_admin_chat_channel_id"
-}`
+}
+```
 
 ### Obtaining API Key
 
