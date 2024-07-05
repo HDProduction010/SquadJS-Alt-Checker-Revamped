@@ -111,8 +111,7 @@ export default class AltChecker extends DiscordBasePlugin {
         this.server.on('PLAYER_CONNECTED', this.onPlayerConnected);
     }
 
-    async unmount() {
-    }
+    async unmount() {}
 
     async onDiscordMessage(message) {
         if (message.author.id === this.options.discordClient.user.id) return;
@@ -408,6 +407,7 @@ async generateDiscordEmbed(res) {
 
     return embed;
 }
+
     async doAltCheck(matchGroups) {
         let condition;
         let IP;
