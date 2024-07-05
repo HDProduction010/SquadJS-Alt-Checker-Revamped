@@ -45,15 +45,21 @@ To get a BattleMetrics API key:
 
 1. Sign in to your [BattleMetrics account](https://www.battlemetrics.com/).
 2. Click on the user icon next to the logout button.
+   ![User Icon](https://i.imgur.com/nOCza7P.png)
 3. Select "Account Management" on the right side.
+   ![BattleMetrics Account Management](https://i.imgur.com/n5oHRbO.png)
 4. Scroll to the bottom of the page to the "Personal Access Tokens" section.
+   ![Manage Access Tokens](https://i.imgur.com/9Vf8UaE.png)
 5. Click on "Manage Access Tokens".
+   ![Manage Access Tokens](https://i.imgur.com/9Vf8UaE.png)
 6. Create a new token and give it a name.
-7. Ensure the token has the ability to view bans and players.
+    ![Create Token](https://i.imgur.com/1CFFqYD.png)
+7. Ensure the token has the ability to view bans.
+    ![Grant API Permission](https://i.imgur.com/8kOREUz.png)
 8. Copy the generated token and use it in your `config.json`.
 
-![User Icon](https://i.imgur.com/nOCza7P.png)
-![BattleMetrics Account Management](https://i.imgur.com/n5oHRbO.png)
+
+
 ![Manage Access Tokens](https://i.imgur.com/9Vf8UaE.png)
 ![Create Token](https://i.imgur.com/1CFFqYD.png)
 ![Grant API Permission](https://i.imgur.com/8kOREUz.png)
