@@ -35,7 +35,6 @@ This AltChecker is a Discord and game server integration plugin designed to chec
     "showCheaterBans": true,
     "enableCheaterAltKicks": true,
     "adminChatChannelID": "your_admin_chat_channel_id",
-    "mergeOnlineAltsToSameTeam": false
 }
 ```
 
