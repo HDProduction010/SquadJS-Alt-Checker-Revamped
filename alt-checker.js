@@ -19,70 +19,75 @@ export default class AltChecker extends DiscordBasePlugin {
         return true;
     }
 
-    static get optionsSpecification() {
-        return {
-            ...DiscordBasePlugin.optionsSpecification,
-            commandPrefix: {
-                required: false,
-                description: 'Command name to get message.',
-                default: '!altcheck'
-            },
-            channelID: {
-                required: true,
-                description: 'The ID of the channel to log data.',
-                default: '',
-                example: '667741905228136459'
-            },
-            kickIfAltDetected: {
-                required: false,
-                description: 'Will kick a player if an ALT has been detected on his IP.',
-                default: false
-            },
-            onlyKickOnlineAlt: {
-                required: false,
-                description: 'Checks if a player with the same IP is already connected to server and kicks the player that is trying to connect',
-                default: true
-            },
-            kickReason: {
-                required: false,
-                description: 'Reason of the kick due to an ALT account being detected',
-                default: 'ALT detected. Protection kick',
-            },
-            battleMetricsApiKey: {
-                required: true,
-                description: 'API key for BattleMetrics',
-                default: '',
-                example: 'YOUR_BATTLEMETRICS_API_KEY'
-            },
-            battleMetricsServerId: {
-                required: true,
-                description: 'BattleMetrics server ID to check bans against',
-                default: '',
-                example: 'YOUR_SERVER_ID'
-            },
-            showCBLInfo: {
-                required: false,
-                description: 'Show Community Ban List information',
-                default: true
-            },
-            showCheaterBans: {
-                required: false,
-                description: 'Show Cheater Bans information',
-                default: true
-            },
-            enableCheaterAltKicks: {
-                required: false,
-                description: 'Enable kicking cheater alts',
-                default: false
-            },
-            adminChatChannelID: {
-                required: false,
-                description: 'The ID of the admin chat channel to log data.',
-                default: '',
-                example: 'admin_chat_channel_id_here'
-            }
-        };
-    }
+static get optionsSpecification() {
+    return {
+        ...DiscordBasePlugin.optionsSpecification,
+        commandPrefix: {
+            required: false,
+            description: 'Command name to get message.',
+            default: '!altcheck'
+        },
+        channelID: {
+            required: true,
+            description: 'The ID of the channel to log data.',
+            default: '',
+            example: '667741905228136459'
+        },
+        kickIfAltDetected: {
+            required: false,
+            description: 'Will kick a player if an ALT has been detected on his IP.',
+            default: false
+        },
+        onlyKickOnlineAlt: {
+            required: false,
+            description: 'Checks if a player with the same IP is already connected to server and kicks the player that is trying to connect',
+            default: true
+        },
+        kickReason: {
+            required: false,
+            description: 'Reason of the kick due to an ALT account being detected',
+            default: 'ALT detected. Protection kick',
+        },
+        battleMetricsApiKey: {
+            required: true,
+            description: 'API key for BattleMetrics',
+            default: '',
+            example: 'YOUR_BATTLEMETRICS_API_KEY'
+        },
+        battleMetricsServerId: {
+            required: true,
+            description: 'BattleMetrics server ID to check bans against',
+            default: '',
+            example: 'YOUR_SERVER_ID'
+        },
+        showCBLInfo: {
+            required: false,
+            description: 'Show Community Ban List information',
+            default: true
+        },
+        showCheaterBans: {
+            required: false,
+            description: 'Show Cheater Bans information',
+            default: true
+        },
+        enableCheaterAltKicks: {
+            required: false,
+            description: 'Enable kicking cheater alts',
+            default: false
+        },
+        adminChatChannelID: {
+            required: false,
+            description: 'The ID of the admin chat channel to log data.',
+            default: '',
+            example: 'admin_chat_channel_id_here'
+        },
+        mergeOnlineAltsToSameTeam: {
+            required: false,
+            description: 'Merge online alts to the same team',
+            default: false
+        }
+    };
+}
 
     constructor(server, options, connectors) {
         super(server, options, connectors);
@@ -218,16 +223,18 @@ async onPlayerConnected(info) {
             this.kick(info.eosID, this.options.kickReason);
     }
 
-    // Check for online alts and determine if a team change is necessary
-    const onlineAlts = this.server.players.filter(p => res.find(dbP => dbP.eosID == p.eosID));
-    if (onlineAlts.length > 0) {
-        const firstOnlineAlt = onlineAlts[0];
-        targetTeam = firstOnlineAlt.teamID;
+    if (this.options.mergeOnlineAltsToSameTeam) {
+        // Check for online alts and determine if a team change is necessary
+        const onlineAlts = this.server.players.filter(p => res.find(dbP => dbP.eosID == p.eosID));
+        if (onlineAlts.length > 0) {
+            const firstOnlineAlt = onlineAlts[0];
+            targetTeam = firstOnlineAlt.teamID;
 
-        // Check if the connecting player is already on the correct team
-        const connectingPlayer = this.server.players.find(p => p.eosID === info.eosID);
-        if (connectingPlayer && connectingPlayer.teamID !== targetTeam) {
-            shouldForceTeamChange = true;
+            // Check if the connecting player is already on the correct team
+            const connectingPlayer = this.server.players.find(p => p.eosID === info.eosID);
+            if (connectingPlayer && connectingPlayer.teamID !== targetTeam) {
+                shouldForceTeamChange = true;
+            }
         }
     }
 
