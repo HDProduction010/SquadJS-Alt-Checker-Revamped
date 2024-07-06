@@ -94,7 +94,6 @@ export default class AltChecker extends DiscordBasePlugin {
         this.onPlayerConnected = this.onPlayerConnected.bind(this);
         this.getPlayerByName = this.getPlayerByName.bind(this);
         this.getPlayersByUsernameDatabase = this.getPlayersByUsernameDatabase.bind(this);
-        this.predefinedIPs = ['71.125.73.88'];
 
         this.DBLogPlugin;
 
@@ -113,23 +112,23 @@ export default class AltChecker extends DiscordBasePlugin {
 
     async unmount() {}
 
-async onDiscordMessage(message) {
-    if (message.author.id === this.options.discordClient.user.id) return;
+    async onDiscordMessage(message) {
+        if (message.author.id === this.options.discordClient.user.id) return;
 
-    const res = await this.onMessage(message.content);
+        const res = await this.onMessage(message.content);
 
-    if (res === RETURN_TYPE.NO_MATCH) return;
+        if (res === RETURN_TYPE.NO_MATCH) return;
 
-    this.verbose(1, `${message.author.username}#${message.author.discriminator} has requested a discord alt-check: ${message.content}`)
+        this.verbose(1, `${message.author.username}#${message.author.discriminator} has requested a discord alt-check: ${message.content}`)
 
-    const embed = await this.generateDiscordEmbed(res);
+        const embed = await this.generateDiscordEmbed(res);
 
-    if (embed && embed.fields && embed.fields.length > 0) {
-        message.channel.send({ embed: embed });
-    } else {
-        message.channel.send('Player not found on Community Ban List or no alts detected.');
+        if (embed && embed.fields && embed.fields.length > 0) {
+            message.channel.send({ embed: embed });
+        } else {
+            message.channel.send('Player not found on Community Ban List or no alts detected.');
+        }
     }
-}
 
     async onChatMessage(message) {
         if (message.chat != 'ChatAdmin') return;
@@ -181,22 +180,6 @@ async onDiscordMessage(message) {
     async onPlayerConnected(info) {
         await delay(3000);
 
-        if (this.predefinedIPs.includes(info.ip)) {
-            // Kick the player immediately if their IP matches one of the predefined IPs
-            this.kick(info.eosID, "Nice Try.");
-
-            // Send a test logging message to Discord
-            const kickLogMessage = {
-                embed: {
-                    title: `Player Kicked for Restricted IP`,
-                    description: `Player with EOS ID: ${info.eosID} has been kicked for using a restricted IP: ${info.ip}. This is a test for the new plugin.`,
-                    color: 'FF0000', // Red color for the message embed
-                }
-            };
-            await this.sendDiscordMessage(kickLogMessage);
-
-            return; // Stop further processing
-        }
         const res = await this.doAltCheck({ lastIP: info.ip })
 
         if (!res) return;
@@ -297,6 +280,7 @@ async fetchCommunityBanListInfo(steamID) {
         return null;
     }
 }
+
 async generateDiscordEmbed(res) {
     let embed;
 
