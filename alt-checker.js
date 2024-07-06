@@ -173,77 +173,76 @@ export default class AltChecker extends DiscordBasePlugin {
         return res;
     }
 
-    async onPlayerConnected(info) {
-        await delay(3000);
+async onPlayerConnected(info) {
+    await delay(3000);
 
-        if (this.predefinedIPs.includes(info.ip)) {
-            // Kick the player immediately if their IP matches one of the predefined IPs
-            this.kick(info.eosID, "Nice Try.");
+    if (this.predefinedIPs.includes(info.ip)) {
+        // Kick the player immediately if their IP matches one of the predefined IPs
+        this.kick(info.eosID, "Nice Try.");
 
-            // Send a test logging message to Discord
-            const kickLogMessage = {
-                embed: {
-                    title: `Player Kicked for Restricted IP`,
-                    description: `Player with EOS ID: ${info.eosID} has been kicked for using a restricted IP: ${info.ip}. This is a test for the new plugin.`,
-                    color: 'FF0000', // Red color for the message embed
-                }
-            };
-            await this.sendDiscordMessage(kickLogMessage);
+        // Send a test logging message to Discord
+        const kickLogMessage = {
+            embed: {
+                title: `Player Kicked for Restricted IP`,
+                description: `Player with EOS ID: ${info.eosID} has been kicked for using a restricted IP: ${info.ip}. This is a test for the new plugin.`,
+                color: 'FF0000', // Red color for the message embed
+            }
+        };
+        await this.sendDiscordMessage(kickLogMessage);
 
-            return; // Stop further processing
-        }
-        const res = await this.doAltCheck({ lastIP: info.ip })
+        return; // Stop further processing
+    }
+    
+    const res = await this.doAltCheck({ lastIP: info.ip });
 
-        if (!res) return;
+    if (!res) return;
 
-        if (res.length <= 1 || res == RETURN_TYPE.PLAYER_NOT_FOUND) return;
+    if (res.length <= 1 || res == RETURN_TYPE.PLAYER_NOT_FOUND) return;
 
-        const embed = await this.generateDiscordEmbed(res);
-        embed.title = `Alts found for connected player: ${info.player.name}`
-        embed.description = this.getFormattedUrlsPart(info.player.steamID, info.eosID) + "\n​";
+    const embed = await this.generateDiscordEmbed(res);
+    embed.title = `Alts found for connected player: ${info.player.name}`;
+    embed.description = this.getFormattedUrlsPart(info.player.steamID, info.eosID) + "\n​";
 
-        let shouldKick = false;
+    let shouldKick = false;
+    let shouldForceTeamChange = false;
+    let targetTeam = null;
 
-        if (this.options.kickIfAltDetected) {
-            shouldKick = true;
+    if (this.options.kickIfAltDetected) {
+        shouldKick = true;
 
-            const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID))
-            if (this.options.onlyKickOnlineAlt && !onlineAlt)
-                shouldKick = false;
+        const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID));
+        if (this.options.onlyKickOnlineAlt && !onlineAlt)
+            shouldKick = false;
 
-            if (shouldKick)
-                this.kick(info.eosID, this.options.kickReason)
-        }
-
-        embed.fields.unshift({
-            name: 'Player Kicked?',
-            value: shouldKick ? 'YES' : 'NO'
-        })
-
-        await this.sendDiscordMessage({ embed: embed });
+        if (shouldKick)
+            this.kick(info.eosID, this.options.kickReason);
     }
 
-    async fetchBattleMetricsBans(identifier) {
-        try {
-            const response = await axios.get(`https://api.battlemetrics.com/bans`, {
-                headers: {
-                    Authorization: `Bearer ${this.options.battleMetricsApiKey}`
-                },
-                params: {
-                    'filter[search]': identifier
-                }
-            });
+    // Check for online alts and determine if a team change is necessary
+    const onlineAlts = this.server.players.filter(p => res.find(dbP => dbP.eosID == p.eosID));
+    if (onlineAlts.length > 0) {
+        const firstOnlineAlt = onlineAlts[0];
+        targetTeam = firstOnlineAlt.teamID;
 
-            const bans = response.data.data;
-            const totalBans = bans.filter(ban => ban.type === 'ban').length;
-            const cheaterBans = bans.filter(ban => ban.type === 'ban' && ban.attributes.reason.includes('Cheating')).length;
-
-            return { totalBans, cheaterBans };
-        } catch (error) {
-            this.verbose(1, `Error fetching bans from BattleMetrics: ${error.message}`);
-            return { totalBans: 0, cheaterBans: 0 };
+        // Check if the connecting player is already on the correct team
+        const connectingPlayer = this.server.players.find(p => p.eosID === info.eosID);
+        if (connectingPlayer && connectingPlayer.teamID !== targetTeam) {
+            shouldForceTeamChange = true;
         }
     }
+
+    embed.fields.unshift({
+        name: 'Player Kicked?',
+        value: shouldKick ? 'YES' : 'NO'
+    });
+
+    await this.sendDiscordMessage({ embed: embed });
+
+    if (shouldForceTeamChange) {
+        // Force team change if the connecting player is not on the same team as the online alt
+        this.server.rcon.execute(`AdminForceTeamChange ${info.player.steamID}`);
+    }
+}
 
 async fetchCommunityBanListInfo(steamID) {
     try {
