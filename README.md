@@ -50,7 +50,6 @@ To get a BattleMetrics API key:
 3. Select "Account Management" on the right side.
    ![BattleMetrics Account Management](https://i.imgur.com/n5oHRbO.png)
 4. Scroll to the bottom of the page to the "Personal Access Tokens" section.
-   ![Manage Access Tokens](https://i.imgur.com/9Vf8UaE.png)
 5. Click on "Manage Access Tokens".
    ![Manage Access Tokens](https://i.imgur.com/9Vf8UaE.png)
 6. Create a new token and give it a name.
