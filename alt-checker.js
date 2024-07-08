@@ -347,8 +347,9 @@ async generateDiscordEmbed(res) {
         let cblFields = [];
         let cblInfo = '';
 
+        let cblData;
         if (this.options.showCBLInfo) {
-            const cblData = await this.fetchCommunityBanListInfo(mainPlayer.steamID);
+            cblData = await this.fetchCommunityBanListInfo(mainPlayer.steamID);
             if (cblData) {
                 cblFields = [
                     { name: 'Reputation Points', value: `${cblData.reputationPoints}`, inline: true },
