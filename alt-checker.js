@@ -327,13 +327,21 @@ async generateDiscordEmbed(res) {
                 if (adminChannel) {
                     adminChannel.send(`Cheater ALT detected and kicked: ${alt.lastName}\nBattleMetrics Profile: ${this.getBattlemetricsRconUrl(alt.eosID)}`);
                 }
-            }
 
-            embed.fields.push({
-                name: `​\n${+altK + 1}. ${alt.lastName}`,
-                value: `${this.getFormattedUrlsPart(alt.steamID, alt.eosID)}\n**SteamID: **\`${alt.steamID}\`\n**EOS ID: **\`${alt.eosID}\`\n**Is Online: **${isOnlineText}\n**Bans: **${banData.totalBans}${this.options.showCheaterBans ? `\n**Cheater Bans: **${banData.cheaterBans > 0 ? 'Yes' : 'No'}` : ''}${cblInfo}`,
-                inline: false
-            });
+                // Create embed for kicked alt
+                embed.fields.push({
+                    name: `Cheater ALT detected and kicked: ${alt.lastName}`,
+                    value: `${this.getFormattedUrlsPart(alt.steamID, alt.eosID)}\n**SteamID: **\`${alt.steamID}\`\n**EOS ID: **\`${alt.eosID}\`\n**Cheater Bans: **${banData.cheaterBans > 0 ? 'Yes' : 'No'}`,
+                    inline: false
+                });
+            } else {
+                // Create embed for other alts
+                embed.fields.push({
+                    name: `​\n${+altK + 1}. ${alt.lastName}`,
+                    value: `${this.getFormattedUrlsPart(alt.steamID, alt.eosID)}\n**SteamID: **\`${alt.steamID}\`\n**EOS ID: **\`${alt.eosID}\`\n**Is Online: **${isOnlineText}\n**Bans: **${banData.totalBans}${this.options.showCheaterBans ? `\n**Cheater Bans: **${banData.cheaterBans > 0 ? 'Yes' : 'No'}` : ''}${cblInfo}`,
+                    inline: false
+                });
+            }
         }
 
         // Ensure description field is set
@@ -346,8 +354,8 @@ async generateDiscordEmbed(res) {
         const banData = await this.fetchBattleMetricsBans(mainPlayer.eosID);
         let cblFields = [];
         let cblInfo = '';
-
         let cblData;
+
         if (this.options.showCBLInfo) {
             cblData = await this.fetchCommunityBanListInfo(mainPlayer.steamID);
             if (cblData) {
