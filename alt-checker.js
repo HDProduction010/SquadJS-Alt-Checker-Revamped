@@ -115,7 +115,7 @@ export default class AltChecker extends DiscordBasePlugin {
     async onDiscordMessage(message) {
         if (message.author.id === this.options.discordClient.user.id) return;
 
-        const res = await this.onMessage(message.content);
+        const res = await this.onMessage(message.content, false);
 
         if (res === RETURN_TYPE.NO_MATCH) return;
 
@@ -133,7 +133,7 @@ export default class AltChecker extends DiscordBasePlugin {
     async onChatMessage(message) {
         if (message.chat != 'ChatAdmin') return;
 
-        const res = await this.onMessage(message.message);
+        const res = await this.onMessage(message.message, false);
 
         if (res == RETURN_TYPE.NO_MATCH) return;
 
@@ -161,7 +161,7 @@ export default class AltChecker extends DiscordBasePlugin {
         this.warn(message.eosID, warningMessage);
     }
 
-    async onMessage(message) {
+    async onMessage(message, isPlayerConnected = true) {
         const messageContent = message
         const regex = new RegExp(`^${this.options.commandPrefix} (?:(?<steamID>\\d{17})|(?<eosID>[\\w\\d]{32})|(?<lastIP>(?:\\d{1,3}\\.){3}\\d{1,3})|(?<playerName>.+))$`, 'i');
         const matched = messageContent.match(regex)
@@ -186,7 +186,7 @@ export default class AltChecker extends DiscordBasePlugin {
 
         if (res.length <= 1 || res == RETURN_TYPE.PLAYER_NOT_FOUND) return;
 
-        const embed = await this.generateDiscordEmbed(res);
+        const embed = await this.generateDiscordEmbed(res, true, info.player.name);
         embed.title = `Alts found for connected player: ${info.player.name}`
         embed.description = this.getFormattedUrlsPart(info.player.steamID, info.eosID) + "\n​";
 
@@ -281,7 +281,7 @@ async fetchCommunityBanListInfo(steamID) {
     }
 }
 
-async generateDiscordEmbed(res) {
+async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
     let embed;
 
     if (!res || res == RETURN_TYPE.PLAYER_NOT_FOUND || res.length == 0) {
@@ -318,24 +318,25 @@ async generateDiscordEmbed(res) {
                 }
             }
 
-            if (this.options.enableCheaterAltKicks && banData.cheaterBans > 0) {
+            if (isPlayerConnected && this.options.enableCheaterAltKicks && banData.cheaterBans > 0) {
                 // Kick the cheater or their alt
                 this.kick(alt.eosID, "Cheater ALT detected. Protection kick");
 
-                // Send an embed message to the admin chat
+                // Send a message to the admin chat
                 const adminChannel = this.options.discordClient.channels.cache.get(this.options.adminChatChannelID);
                 if (adminChannel) {
-                    const adminEmbed = {
-                        title: `Cheater Alt Detected.`,
-                        color: 'FF0000',
-                        fields: [
-                            {
-                                name: `<User was kicked for having ${banData.cheaterBans} alt(s) with cheater ban>`,
-                                value: `[Steam](https://steamcommunity.com/profiles/${alt.steamID}) | [BattleMetrics](${this.getBattlemetricsRconUrl(alt.eosID)}) | [CBL](https://communitybanlist.com/search/${alt.steamID})\n**Steam ID: **\`${alt.steamID}\`\n\n**Connected Alts:**\n${this.generateAltsList(res)}`
-                            }
-                        ]
-                    };
-                    adminChannel.send({ embed: adminEmbed });
+                    adminChannel.send({
+                        embed: {
+                            title: 'Cheater ALT detected and kicked',
+                            color: 15158332, // Red color
+                            fields: [
+                                {
+                                    name: `User was kicked for having ${res.length - 1} alt(s) with cheater ban`,
+                                    value: `Player: ${playerName}\n${this.getFormattedUrlsPart(alt.steamID, alt.eosID)}\n**SteamID: **\`${alt.steamID}\`\n**EOS ID: **\`${alt.eosID}\`\n**Cheater Bans: **${banData.cheaterBans > 0 ? 'Yes' : 'No'}`
+                                }
+                            ]
+                        }
+                    });
                 }
             }
 
@@ -356,10 +357,9 @@ async generateDiscordEmbed(res) {
         const banData = await this.fetchBattleMetricsBans(mainPlayer.eosID);
         let cblFields = [];
         let cblInfo = '';
-        let cblData;
 
         if (this.options.showCBLInfo) {
-            cblData = await this.fetchCommunityBanListInfo(mainPlayer.steamID);
+            const cblData = await this.fetchCommunityBanListInfo(mainPlayer.steamID);
             if (cblData) {
                 cblFields = [
                     { name: 'Reputation Points', value: `${cblData.reputationPoints}`, inline: true },
@@ -373,24 +373,25 @@ async generateDiscordEmbed(res) {
             }
         }
 
-        if (this.options.enableCheaterAltKicks && banData.cheaterBans > 0) {
+        if (isPlayerConnected && this.options.enableCheaterAltKicks && banData.cheaterBans > 0) {
             // Kick the cheater or their alt
             this.kick(mainPlayer.eosID, "Cheater ALT detected. Protection kick");
 
-            // Send an embed message to the admin chat
+            // Send a message to the admin chat
             const adminChannel = this.options.discordClient.channels.cache.get(this.options.adminChatChannelID);
             if (adminChannel) {
-                const adminEmbed = {
-                    title: `Cheater Alt Detected.`,
-                    color: 'FF0000',
-                    fields: [
-                        {
-                            name: `<User was kicked for having ${banData.cheaterBans} alt(s) with cheater ban>`,
-                            value: `[Steam](https://steamcommunity.com/profiles/${mainPlayer.steamID}) | [BattleMetrics](${this.getBattlemetricsRconUrl(mainPlayer.eosID)}) | [CBL](https://communitybanlist.com/search/${mainPlayer.steamID})\n**Steam ID: **\`${mainPlayer.steamID}\`\n\n**Connected Alts:**\n${this.generateAltsList(res)}`
-                        }
-                    ]
-                };
-                adminChannel.send({ embed: adminEmbed });
+                adminChannel.send({
+                    embed: {
+                        title: 'Cheater ALT detected and kicked',
+                        color: 15158332, // Red color
+                        fields: [
+                            {
+                                name: `User was kicked for having ${res.length - 1} alt(s) with cheater ban`,
+                                value: `Player: ${mainPlayer.lastName}\n${this.getFormattedUrlsPart(mainPlayer.steamID, mainPlayer.eosID)}\n**SteamID: **\`${mainPlayer.steamID}\`\n**EOS ID: **\`${mainPlayer.eosID}\`\n**Cheater Bans: **${banData.cheaterBans > 0 ? 'Yes' : 'No'}`
+                            }
+                        ]
+                    }
+                });
             }
         }
 
@@ -418,9 +419,6 @@ async generateDiscordEmbed(res) {
     return embed;
 }
 
-generateAltsList(res) {
-    return res.map(alt => `${alt.lastName} (${alt.steamID})`).join('\n');
-}
 
     async doAltCheck(matchGroups) {
         let condition;
@@ -496,3 +494,4 @@ generateAltsList(res) {
         });
     }
 }
+
