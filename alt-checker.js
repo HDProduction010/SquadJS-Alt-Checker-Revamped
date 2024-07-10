@@ -441,6 +441,7 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
     return embed;
 }
 
+
     async doAltCheck(matchGroups) {
         let condition;
         let IP;
