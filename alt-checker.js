@@ -363,7 +363,7 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
             embed.description = "Alts found.";
         }
     } else {
-        this.verbose(1, 'No alts found')
+        this.verbose('No alts found')
         const mainPlayer = res[0];
         let banData = { totalBans: 0, cheaterBans: 0 };
         let cblFields = [];
