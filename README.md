@@ -78,6 +78,7 @@ Use the command prefix defined in the configuration to check for alts and ban in
     
     !altcheck 76561198000000000
     
+THIS COMMAND MUST BE RAN IN THE CHANNEL DEFINED IN THE CONFIG `channelID` IT WILL NOT RUN ANYWHERE ELSE.
 
 ### License
 
