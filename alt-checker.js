@@ -494,4 +494,3 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
         });
     }
 }
-
