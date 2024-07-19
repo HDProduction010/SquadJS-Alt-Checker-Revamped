@@ -118,23 +118,25 @@ export default class AltChecker extends DiscordBasePlugin {
 
     async unmount() {}
 
-    async onDiscordMessage(message) {
-        if (message.author.id === this.options.discordClient.user.id) return;
+async onDiscordMessage(message) {
+    if (message.author.id === this.options.discordClient.user.id) return;
 
-        const res = await this.onMessage(message.content, false);
+    const res = await this.onMessage(message.content, false);
 
-        if (res === RETURN_TYPE.NO_MATCH) return;
+    if (res === RETURN_TYPE.NO_MATCH) return;
 
-        this.verbose(1, `${message.author.username}#${message.author.discriminator} has requested a discord alt-check: ${message.content}`)
+    this.verbose(1, `${message.author.username}#${message.author.discriminator} has requested a discord alt-check: ${message.content}`)
 
-        const embed = await this.generateDiscordEmbed(res);
+    const embeds = await this.generateDiscordEmbed(res);
 
+    for (const embed of embeds) {
         if (embed && embed.fields && embed.fields.length > 0) {
             message.channel.send({ embed: embed });
         } else {
             message.channel.send('Player not found on Community Ban List or no alts detected.');
         }
     }
+}
 
     async onChatMessage(message) {
         if (message.chat != 'ChatAdmin') return;
@@ -183,39 +185,41 @@ export default class AltChecker extends DiscordBasePlugin {
         return res;
     }
 
-    async onPlayerConnected(info) {
-        await delay(3000);
+async onPlayerConnected(info) {
+    await delay(3000);
 
-        const res = await this.doAltCheck({ lastIP: info.ip })
+    const res = await this.doAltCheck({ lastIP: info.ip })
 
-        if (!res) return;
+    if (!res) return;
 
-        if (res.length <= 1 || res == RETURN_TYPE.PLAYER_NOT_FOUND) return;
+    if (res.length <= 1 || res == RETURN_TYPE.PLAYER_NOT_FOUND) return;
 
-        const embed = await this.generateDiscordEmbed(res, true, info.player.name);
-        embed.title = `Alts found for connected player: ${info.player.name}`
-        embed.description = this.getFormattedUrlsPart(info.player.steamID, info.eosID) + "\n​";
+    const embeds = await this.generateDiscordEmbed(res, true, info.player.name);
+    embeds[0].title = `Alts found for connected player: ${info.player.name}`;
+    embeds[0].description = this.getFormattedUrlsPart(info.player.steamID, info.eosID) + "\n​";
 
-        let shouldKick = false;
+    let shouldKick = false;
 
-        if (this.options.kickIfAltDetected) {
-            shouldKick = true;
+    if (this.options.kickIfAltDetected) {
+        shouldKick = true;
 
-            const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID))
-            if (this.options.onlyKickOnlineAlt && !onlineAlt)
-                shouldKick = false;
+        const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID))
+        if (this.options.onlyKickOnlineAlt && !onlineAlt)
+            shouldKick = false;
 
-            if (shouldKick)
-                this.kick(info.eosID, this.options.kickReason)
-        }
+        if (shouldKick)
+            this.kick(info.eosID, this.options.kickReason)
+    }
 
-        embed.fields.unshift({
-            name: 'Player Kicked?',
-            value: shouldKick ? 'YES' : 'NO'
-        })
+    embeds[0].fields.unshift({
+        name: 'Player Kicked?',
+        value: shouldKick ? 'YES' : 'NO'
+    })
 
+    for (const embed of embeds) {
         await this.sendDiscordMessage({ embed: embed });
     }
+}
 
     async fetchBattleMetricsBans(identifier) {
         try {
@@ -288,24 +292,29 @@ async fetchCommunityBanListInfo(steamID) {
 }
 
 async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
-    let embed;
+    const embeds = [];
+
+    let embed = {
+        title: '',
+        color: 'FF0000',
+        fields: []
+    };
 
     if (!res || res == RETURN_TYPE.PLAYER_NOT_FOUND || res.length == 0) {
-        embed = {
-            title: `Unable to find player`,
-            description: `Player hasn't been found in the database!`,
-            color: 'ff9900',
-        }
-    } else if (res.length > 1) {
-        embed = {
-            title: `Alts for IP: ${res[0].lastIP}`,
-            color: 'FF0000',
-            fields: [{
-                name: 'IP',
-                value: res[0].lastIP || 'N/A',
-                inline: true
-            }]
-        }
+        embed.title = `Unable to find player`;
+        embed.description = `Player hasn't been found in the database!`;
+        embed.color = 'ff9900';
+        embeds.push(embed);
+        return embeds;
+    }
+
+    if (res.length > 1) {
+        embed.title = `Alts for IP: ${res[0].lastIP}`;
+        embed.fields.push({
+            name: 'IP',
+            value: res[0].lastIP || 'N/A',
+            inline: true
+        });
 
         for (let altK in res) {
             const alt = res[altK];
@@ -315,16 +324,10 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
             let banData = { totalBans: 0, cheaterBans: 0 };
             let cblInfo = '';
 
-            if (alt.eosID) {
-                try {
-                    if (this.options.enableBMBans) {
-                        banData = await this.fetchBattleMetricsBans(alt.eosID);
-                    }
-                } catch (error) {
-                    this.verbose(1, `Error fetching BattleMetrics data: ${error.message}`);
-                }
-            } else {
-                this.verbose(1, `Missing EOS ID for player ${alt.lastName}`);
+            try {
+                banData = await this.fetchBattleMetricsBans(alt.eosID);
+            } catch (error) {
+                this.verbose(1, `Error fetching BattleMetrics data: ${error.message}`);
             }
 
             if (this.options.showCBLInfo) {
@@ -368,12 +371,24 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
                 value: `${this.getFormattedUrlsPart(alt.steamID, alt.eosID)}\n**SteamID: **\`${alt.steamID || 'N/A'}\`\n**EOS ID: **\`${alt.eosID || 'N/A'}\`\n**Is Online: **${isOnlineText}\n**Bans: **${banData.totalBans || '0'}${this.options.showCheaterBans ? `\n**Cheater Bans: **${banData.cheaterBans > 0 ? 'Yes' : 'No'}` : ''}${cblInfo}`,
                 inline: false
             });
+
+            // Check if the embed exceeds the character limit
+            if (JSON.stringify(embed).length > 5000) {
+                embeds.push(embed);
+                embed = {
+                    title: '',
+                    color: 'FF0000',
+                    fields: []
+                };
+            }
         }
 
         // Ensure description field is set
         if (!embed.description) {
             embed.description = "Alts found.";
         }
+        embeds.push(embed);
+
     } else {
         this.verbose('No alts found')
         const mainPlayer = res[0];
@@ -381,16 +396,10 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
         let cblFields = [];
         let cblInfo = '';
 
-        if (mainPlayer.eosID) {
-            try {
-                if (this.options.enableBMBans) {
-                    banData = await this.fetchBattleMetricsBans(mainPlayer.eosID);
-                }
-            } catch (error) {
-                this.verbose(1, `Error fetching BattleMetrics data: ${error.message}`);
-            }
-        } else {
-            this.verbose(1, `Missing EOS ID for player ${mainPlayer.lastName}`);
+        try {
+            banData = await this.fetchBattleMetricsBans(mainPlayer.eosID);
+        } catch (error) {
+            this.verbose(1, `Error fetching BattleMetrics data: ${error.message}`);
         }
 
         if (this.options.showCBLInfo) {
@@ -454,11 +463,12 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
         if (cblInfo) {
             embed.fields.push({ name: 'Community Ban List Info', value: cblInfo, inline: false });
         }
+
+        embeds.push(embed);
     }
 
-    return embed;
+    return embeds;
 }
-
 
     async doAltCheck(matchGroups) {
         let condition;
