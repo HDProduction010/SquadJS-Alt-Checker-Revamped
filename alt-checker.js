@@ -100,6 +100,7 @@ export default class AltChecker extends DiscordBasePlugin {
         this.onPlayerConnected = this.onPlayerConnected.bind(this);
         this.getPlayerByName = this.getPlayerByName.bind(this);
         this.getPlayersByUsernameDatabase = this.getPlayersByUsernameDatabase.bind(this);
+        const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
         this.DBLogPlugin;
 
@@ -318,7 +319,7 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
 
         for (let altK in res) {
             const alt = res[altK];
-            const onlinePlayer = this.server.players.find(p => p.eosID === alt.eosID)
+            const onlinePlayer = this.server.players.find(p => p.eosID === alt.eosID);
             const isOnlineText = onlinePlayer ? `YES\n**Team: **${onlinePlayer.teamID} (${onlinePlayer.role.split('_')[0]})` : 'NO';
 
             let banData = { totalBans: 0, cheaterBans: 0 };
@@ -345,6 +346,8 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
             }
 
             if (isPlayerConnected && this.options.enableCheaterAltKicks && banData.cheaterBans > 0) {
+                // Add a delay before kicking the player
+                await delay(5000); // 5 seconds delay
                 // Kick the cheater or their alt
                 this.kick(alt.eosID, "Cheater ALT detected. Protection kick");
 
@@ -423,6 +426,8 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
         }
 
         if (isPlayerConnected && this.options.enableCheaterAltKicks && banData.cheaterBans > 0) {
+            // Add a delay before kicking the player
+            await delay(5000); // 5 seconds delay
             // Kick the cheater or their alt
             this.kick(mainPlayer.eosID, "Cheater ALT detected. Protection kick");
 
