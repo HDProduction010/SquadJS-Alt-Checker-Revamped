@@ -104,7 +104,7 @@ export default class AltChecker extends DiscordBasePlugin {
         this.DBLogPlugin;
 
         this.warn = (steamid, msg) => { this.server.rcon.warn(steamid, msg); };
-        this.kick = (eosID, reason) => { this.server.rcon.execute(`AdminKick "${eosID}" ${reason}`); };
+        this.kick = (eosID, reason) => { this.server.rcon.execute(`AdminKick ${eosID} ${reason}`); };
     }
 
     async mount() {
