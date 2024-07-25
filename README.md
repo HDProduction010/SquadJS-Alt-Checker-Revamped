@@ -1,6 +1,6 @@
 # AltChecker Plugin
 
-This AltChecker is a Discord and game server integration plugin designed to check for alternate accounts, detect cheater bans, and manage player interactions efficiently. This plugin uses BattleMetrics and the Community Ban List to provide better alt-checking. 
+This AltChecker developed by JetDave is a Discord and game server integration plugin designed to check for alternate accounts, detect cheater bans, and manage player interactions efficiently. This plugin was refactored to use BattleMetrics and the Community Ban List to provide better alt-checking. 
 
 ## Features
 
@@ -90,6 +90,7 @@ Contributions are welcome! Please submit a pull request or open an issue to disc
 
 ## Acknowledgements
 
+- [SquadJSAltChecker](https://github.com/fantinodavide/squadjs-alt-checker/tree/main)
 - [Discord.js](https://discord.js.org/)
 - [BattleMetrics](https://www.battlemetrics.com/)
 - [Community Ban List](https://communitybanlist.com/)
