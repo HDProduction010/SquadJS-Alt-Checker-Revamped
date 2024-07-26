@@ -235,7 +235,7 @@ async onPlayerConnected(info) {
 
             const bans = response.data.data;
             const totalBans = bans.filter(ban => ban.type === 'ban').length;
-			const cheaterBans = bans.filter(ban => ban.type === 'ban' && /cheating/i.test(ban.attributes.reason)).length;
+	    const cheaterBans = bans.filter(ban => ban.type === 'ban' && /cheating/i.test(ban.attributes.reason)).length;
 
 
             return { totalBans, cheaterBans };
