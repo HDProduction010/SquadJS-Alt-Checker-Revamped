@@ -235,7 +235,8 @@ async onPlayerConnected(info) {
 
             const bans = response.data.data;
             const totalBans = bans.filter(ban => ban.type === 'ban').length;
-	    const cheaterBans = bans.filter(ban => ban.type === 'ban' && /cheating/i.test(ban.attributes.reason)).length;
+			const cheaterBans = bans.filter(ban => ban.type === 'ban' && /cheat|cheating|cheater|hack|hacking|hacker|fraud|exploiting|hile|作弊|黑客|骗|hacken|tricher|tricheur|tricherie|trampa|tramposo|engañar|trapacear|trapaceiro|fraude|bedrog|oszukiwanie|oszust|обман|читерство|читер|обманывать|โกง|การโกง/i.test(ban.attributes.reason)).length;
+
 
 
             return { totalBans, cheaterBans };
