@@ -34,6 +34,8 @@ The AltChecker plugin, originally developed by JetDave, has been revamped into a
     "showCBLInfo": true,
     "showCheaterBans": true,
     "enableCheaterAltKicks": true,
+    "roleID": "",
+    "rolePingForCheaterAlt": true,
     "adminChatChannelID": "your_admin_chat_channel_id"
 }
 ```
