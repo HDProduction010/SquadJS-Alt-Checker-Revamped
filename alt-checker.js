@@ -196,14 +196,14 @@ export default class AltChecker extends DiscordBasePlugin {
 async onPlayerConnected(info) {
     await delay(3000);
 
-    const res = await this.doAltCheck({ lastIP: info.ip })
+    const res = await this.doAltCheck({ lastIP: info.ip });
 
     if (!res) return;
 
     if (res.length <= 1 || res == RETURN_TYPE.PLAYER_NOT_FOUND) return;
 
     const embed = await this.generateDiscordEmbed(res, true, info.player.name);
-    embed.title = `Alts found for connected player: ${info.player.name}`
+    embed.title = `Alts found for connected player: ${info.player.name}`;
     embed.description = this.getFormattedUrlsPart(info.player.steamID, info.eosID) + "\n​";
 
     let shouldKick = false;
@@ -211,24 +211,26 @@ async onPlayerConnected(info) {
     if (this.options.kickIfAltDetected) {
         shouldKick = true;
 
-        const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID))
-        if (this.options.onlyKickOnlineAlt && !onlineAlt)
+        const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID));
+        if (this.options.onlyKickOnlineAlt && !onlineAlt) {
             shouldKick = false;
+        }
 
-        if (shouldKick)
-            this.kick(info.eosID, this.options.kickReason)
+        if (shouldKick) {
+            this.kick(info.eosID, this.options.kickReason);
+        }
     }
 
     embed.fields.unshift({
         name: 'Player Kicked?',
         value: shouldKick ? 'YES' : 'NO'
-    })
+    });
 
     await this.sendDiscordMessage({ embed: embed });
 
     // Check for double alts online
     if (this.options.enableDoubleAltPings) {
-        const onlineAlts = res.filter(alt => this.server.players.find(p => p.eosID === alt.eosID));
+        const onlineAlts = res.filter(alt => this.server.players.some(p => p.eosID === alt.eosID));
         if (onlineAlts.length > 1) {
             const adminChannel = this.options.discordClient.channels.cache.get(this.options.adminChatChannelID);
             if (adminChannel) {
@@ -254,6 +256,8 @@ async onPlayerConnected(info) {
         }
     }
 }
+
+
 
     async fetchBattleMetricsBans(identifier) {
         try {
