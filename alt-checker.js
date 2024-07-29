@@ -4,12 +4,12 @@ import Sequelize, { NOW, Op, QueryTypes } from 'sequelize';
 import axios from 'axios';
 import { request, gql } from 'graphql-request';
 
-const delay = (ms) => new Promise((res, rej) => setTimeout(res, ms));
+const delay = (ms) => new Promise((res, rej) => setTimeout(res));
 
 const RETURN_TYPE = {
     NO_MATCH: 0,
     PLAYER_NOT_FOUND: 1
-};
+}
 
 export default class AltChecker extends DiscordBasePlugin {
     static get description() {
@@ -83,20 +83,19 @@ export default class AltChecker extends DiscordBasePlugin {
             },
             rolePingForCheaterAlt: {
                 required: false,
-                description: 'Enable role-ping instead of automagically banning cheater alts',
+                description: 'Enable role ping for cheater alt detection',
                 default: false
             },
             roleID: {
                 required: false,
-                description: 'Role ID to ping when a cheater alt is detected',
+                description: 'Role ID to ping for cheater alt detection',
                 default: '',
-                example: '123456789012345678'
+                example: 'ROLE_ID_HERE'
             },
-            adminChatChannelID: {
+            enableDoubleAltPings: {
                 required: false,
-                description: 'The ID of the admin chat channel to log data.',
-                default: '',
-                example: 'admin_chat_channel_id_here'
+                description: 'Enable pinging when two alts are online',
+                default: false
             }
         };
     }
@@ -136,7 +135,7 @@ export default class AltChecker extends DiscordBasePlugin {
 
         if (res === RETURN_TYPE.NO_MATCH) return;
 
-        this.verbose(1, `${message.author.username}#${message.author.discriminator} has requested a discord alt-check: ${message.content}`);
+        this.verbose(1, `${message.author.username}#${message.author.discriminator} has requested a discord alt-check: ${message.content}`)
 
         const embed = await this.generateDiscordEmbed(res);
 
@@ -154,91 +153,92 @@ export default class AltChecker extends DiscordBasePlugin {
 
         if (res == RETURN_TYPE.NO_MATCH) return;
 
-        this.verbose(1, `${message.player.name} has requested an in-game alt-check: ${message.message}`);
+        this.verbose(1, `${message.player.name} has requested an in-game alt-check: ${message.message}`)
 
         if (!res || res == RETURN_TYPE.PLAYER_NOT_FOUND || res.length == 0) {
             this.warn(message.eosID, `Unable to find player`);
             return;
         }
 
-        let warningMessage = "";
+        let warningMessage = ""
 
         if (res.length > 1) {
-            warningMessage += `Alts for IP: ${res[0].lastIP}\n`;
+            warningMessage += `Alts for IP: ${res[0].lastIP}\n`
 
             for (let altK in res) {
                 const alt = res[altK];
 
-                warningMessage += `\n${+altK + 1}. ${alt.lastName}`;
+                warningMessage += `\n${+altK + 1}. ${alt.lastName}`
             }
         } else {
-            warningMessage += `No Alts found!`;
+            warningMessage += `No Alts found!`
         }
 
         this.warn(message.eosID, warningMessage);
     }
 
     async onMessage(message, isPlayerConnected = true) {
-        const messageContent = message;
+        const messageContent = message
         const regex = new RegExp(`^${this.options.commandPrefix} (?:(?<steamID>\\d{17})|(?<eosID>[\\w\\d]{32})|(?<lastIP>(?:\\d{1,3}\\.){3}\\d{1,3})|(?<playerName>.+))$`, 'i');
-        const matched = messageContent.match(regex);
+        const matched = messageContent.match(regex)
 
         if (!matched) {
-            this.verbose(1, `"${message}" will not be processed.`);
+            this.verbose(1, `"${message}" will not be processed.`)
             return RETURN_TYPE.NO_MATCH;
         }
-        this.verbose(1, `"${message}" has been recognized as a known command and will be processed.`);
+        this.verbose(1, `"${message}" has been recognized as a known command and will be processed.`)
 
-        const res = await this.doAltCheck(matched.groups);
+        const res = await this.doAltCheck(matched.groups)
 
         return res;
     }
 
     async onPlayerConnected(info) {
-        await delay(5000);  // Increased delay to ensure the player is fully connected
+        await delay(3000);
 
-        const res = await this.doAltCheck({ lastIP: info.ip });
+        const res = await this.doAltCheck({ lastIP: info.ip })
 
         if (!res) return;
 
         if (res.length <= 1 || res == RETURN_TYPE.PLAYER_NOT_FOUND) return;
 
         const embed = await this.generateDiscordEmbed(res, true, info.player.name);
-        embed.title = `Alts found for connected player: ${info.player.name}`;
+        embed.title = `Alts found for connected player: ${info.player.name}`
         embed.description = this.getFormattedUrlsPart(info.player.steamID, info.eosID) + "\n​";
 
         let shouldKick = false;
-        let cheaterAlt = null;
 
         if (this.options.kickIfAltDetected) {
             shouldKick = true;
 
-            const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID));
-            cheaterAlt = res.find(alt => alt.bans && alt.bans.cheaterBans > 0);
-
-            if (this.options.onlyKickOnlineAlt && !onlineAlt) {
+            const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID))
+            if (this.options.onlyKickOnlineAlt && !onlineAlt)
                 shouldKick = false;
-            }
 
-            if (cheaterAlt && shouldKick) {
-                this.kick(info.eosID, this.options.kickReason);
-            }
+            if (shouldKick)
+                this.kick(info.eosID, this.options.kickReason)
+        }
+
+        if (this.options.enableDoubleAltPings && res.length > 1) {
+            const altPlayers = res.filter(player => player.eosID !== info.player.eosID);
+            const altNames = altPlayers.map(player => player.lastName).join(', ');
+
+            const doubleAltMessage = {
+                embed: {
+                    title: 'Multiple Alts Online',
+                    color: 3447003, // Blue color
+                    description: `Two alts are currently online: ${info.player.name} and ${altNames}`
+                }
+            };
+            await this.options.discordClient.channels.cache.get(this.options.channelID).send(doubleAltMessage);
         }
 
         embed.fields.unshift({
             name: 'Player Kicked?',
             value: shouldKick ? 'YES' : 'NO'
-        });
+        })
 
         await this.sendDiscordMessage({ embed: embed });
-
-        if (cheaterAlt && !this.options.kickIfAltDetected && this.options.rolePingForCheaterAlt) {
-            const adminChannel = this.options.discordClient.channels.cache.get(this.options.adminChatChannelID);
-            if (adminChannel) {
-                const roleMention = this.options.roleID ? `<@&${this.options.roleID}>` : '';
-                adminChannel.send(`${roleMention} Cheater ALT detected: ${info.player.name} (SteamID: ${info.player.steamID}) is connected with cheater alt ${cheaterAlt.lastName} (SteamID: ${cheaterAlt.steamID})`);
-            }
-        }
     }
 
     async fetchBattleMetricsBans(identifier) {
@@ -254,7 +254,7 @@ export default class AltChecker extends DiscordBasePlugin {
 
             const bans = response.data.data;
             const totalBans = bans.filter(ban => ban.type === 'ban').length;
-            const cheaterBans = bans.filter(ban => ban.type === 'ban' && /cheating|tricheur|trampa|inganno|tricher|fraude|fraudeur|trampa|betrug/i.test(ban.attributes.reason)).length;
+            const cheaterBans = bans.filter(ban => ban.type === 'ban' && /cheating|triche|trampa|imbroglio|copia/i.test(ban.attributes.reason)).length;
 
             return { totalBans, cheaterBans };
         } catch (error) {
@@ -319,7 +319,7 @@ export default class AltChecker extends DiscordBasePlugin {
                 title: `Unable to find player`,
                 description: `Player hasn't been found in the database!`,
                 color: 'ff9900',
-            };
+            }
         } else if (res.length > 1) {
             embed = {
                 title: `Alts for IP: ${res[0].lastIP}`,
@@ -329,20 +329,18 @@ export default class AltChecker extends DiscordBasePlugin {
                     value: res[0].lastIP || 'N/A',
                     inline: true
                 }]
-            };
+            }
 
             for (let altK in res) {
                 const alt = res[altK];
-                const onlinePlayer = this.server.players.find(p => p.eosID === alt.eosID);
+                const onlinePlayer = this.server.players.find(p => p.eosID === alt.eosID)
                 const isOnlineText = onlinePlayer ? `YES\n**Team: **${onlinePlayer.teamID} (${onlinePlayer.role.split('_')[0]})` : 'NO';
 
                 let banData = { totalBans: 0, cheaterBans: 0 };
                 let cblInfo = '';
 
                 try {
-                    if (this.options.enableBMBans) {
-                        banData = await this.fetchBattleMetricsBans(alt.eosID);
-                    }
+                    banData = await this.fetchBattleMetricsBans(alt.eosID);
                 } catch (error) {
                     this.verbose(1, `Error fetching BattleMetrics data: ${error.message}`);
                 }
@@ -368,8 +366,7 @@ export default class AltChecker extends DiscordBasePlugin {
                     // Send a message to the admin chat
                     const adminChannel = this.options.discordClient.channels.cache.get(this.options.adminChatChannelID);
                     if (adminChannel) {
-                        const roleMention = this.options.roleID ? `<@&${this.options.roleID}>` : '';
-                        adminChannel.send({
+                        let adminMessage = {
                             embed: {
                                 title: 'Cheater ALT detected and kicked',
                                 color: 15158332, // Red color
@@ -380,7 +377,13 @@ export default class AltChecker extends DiscordBasePlugin {
                                     }
                                 ]
                             }
-                        });
+                        };
+
+                        if (this.options.rolePingForCheaterAlt && this.options.roleID) {
+                            adminMessage.content = `<@&${this.options.roleID}>`;
+                        }
+
+                        adminChannel.send(adminMessage);
                     }
                 }
 
@@ -396,16 +399,14 @@ export default class AltChecker extends DiscordBasePlugin {
                 embed.description = "Alts found.";
             }
         } else {
-            this.verbose('No alts found');
+            this.verbose('No alts found')
             const mainPlayer = res[0];
             let banData = { totalBans: 0, cheaterBans: 0 };
             let cblFields = [];
             let cblInfo = '';
 
             try {
-                if (this.options.enableBMBans) {
-                    banData = await this.fetchBattleMetricsBans(mainPlayer.eosID);
-                }
+                banData = await this.fetchBattleMetricsBans(mainPlayer.eosID);
             } catch (error) {
                 this.verbose(1, `Error fetching BattleMetrics data: ${error.message}`);
             }
@@ -437,8 +438,7 @@ export default class AltChecker extends DiscordBasePlugin {
                 // Send a message to the admin chat
                 const adminChannel = this.options.discordClient.channels.cache.get(this.options.adminChatChannelID);
                 if (adminChannel) {
-                    const roleMention = this.options.roleID ? `<@&${this.options.roleID}>` : '';
-                    adminChannel.send({
+                    let adminMessage = {
                         embed: {
                             title: 'Cheater ALT detected and kicked',
                             color: 15158332, // Red color
@@ -449,7 +449,13 @@ export default class AltChecker extends DiscordBasePlugin {
                                 }
                             ]
                         }
-                    });
+                    };
+
+                    if (this.options.rolePingForCheaterAlt && this.options.roleID) {
+                        adminMessage.content = `<@&${this.options.roleID}>`;
+                    }
+
+                    adminChannel.send(adminMessage);
                 }
             }
 
@@ -477,6 +483,7 @@ export default class AltChecker extends DiscordBasePlugin {
         return embed;
     }
 
+
     async doAltCheck(matchGroups) {
         let condition;
         let IP;
@@ -486,14 +493,14 @@ export default class AltChecker extends DiscordBasePlugin {
             let groupOverride = group;
 
             if (groupOverride == 'playerName') {
-                const foundPlayer = await this.getPlayerByName(matchGroups[groupOverride]);
+                const foundPlayer = await this.getPlayerByName(matchGroups[groupOverride])
                 if (!foundPlayer) return RETURN_TYPE.PLAYER_NOT_FOUND;
 
                 groupOverride = 'eosID';
                 matchGroups[groupOverride] = foundPlayer.eosID;
             }
 
-            condition = { [groupOverride]: matchGroups[groupOverride] };
+            condition = { [groupOverride]: matchGroups[groupOverride] }
             if (groupOverride == 'lastIP')
                 IP = matchGroups[groupOverride];
             break;
@@ -502,7 +509,7 @@ export default class AltChecker extends DiscordBasePlugin {
         if (!IP) {
             const ipLookup = await this.DBLogPlugin.models.Player.findOne({
                 where: condition
-            });
+            })
             IP = ipLookup?.lastIP;
 
             if (!IP) return RETURN_TYPE.PLAYER_NOT_FOUND;
@@ -512,7 +519,7 @@ export default class AltChecker extends DiscordBasePlugin {
             where: {
                 lastIP: IP
             }
-        });
+        })
 
         if (!res || res.length == 0) return RETURN_TYPE.PLAYER_NOT_FOUND;
 
@@ -523,24 +530,24 @@ export default class AltChecker extends DiscordBasePlugin {
         const onlineRes = this.server.players.find(p => p.name === name || p.name.match(new RegExp(name, 'i')));
 
         if (onlineRes)
-            return onlineRes;
+            return onlineRes
 
         const dbRes = (await this.getPlayersByUsernameDatabase(name)).map(p => p.dataValues).map(p => ({
             name: p.lastName,
             eosID: p.eosID,
             steamID: p.steamID,
             ip: p.lastIP
-        }));
+        }))
 
         return dbRes[0];
     }
 
     getFormattedUrlsPart(steamID, eosID) {
-        return `[Steam](https://steamcommunity.com/profiles/${steamID}) | [BattleMetrics](${this.getBattlemetricsRconUrl(eosID)}) | [CBL](https://communitybanlist.com/search/${steamID})`;
+        return `[Steam](https://steamcommunity.com/profiles/${steamID}) | [BattleMetrics](${this.getBattlemetricsRconUrl(eosID)}) | [CBL](https://communitybanlist.com/search/${steamID})`
     }
 
     getBattlemetricsRconUrl(eosID) {
-        return `https://www.battlemetrics.com/rcon/players?filter%5Bsearch%5D=${eosID}&filter%5Bservers%5D=false&filter%5BplayerFlags%5D=&sort=-lastSeen&showServers=true&method=quick&redirect=1`;
+        return `https://www.battlemetrics.com/rcon/players?filter%5Bsearch%5D=${eosID}&filter%5Bservers%5D=false&filter%5BplayerFlags%5D=&sort=-lastSeen&showServers=true&method=quick&redirect=1`
     }
 
     async getPlayersByUsernameDatabase(username) {
