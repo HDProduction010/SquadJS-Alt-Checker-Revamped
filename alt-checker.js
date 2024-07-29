@@ -216,7 +216,7 @@ export default class AltChecker extends DiscordBasePlugin {
                 shouldKick = false;
 
             if (shouldKick)
-                this.kick(info.eosID, this.options.kickReason)
+                this.kick(info.player.eosID, this.options.kickReason)
         }
 
         if (this.options.enableDoubleAltPings && res.length > 1) {
