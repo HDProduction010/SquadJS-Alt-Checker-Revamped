@@ -204,7 +204,7 @@ export default class AltChecker extends DiscordBasePlugin {
 
         const embed = await this.generateDiscordEmbed(res, true, info.player.name);
         embed.title = `Alts found for connected player: ${info.player.name}`
-        embed.description = this.getFormattedUrlsPart(info.player.steamID, info.eosID) + "\n​";
+        embed.description = this.getFormattedUrlsPart(info.player.steamID) + "\n​";
 
         let shouldKick = false;
 
