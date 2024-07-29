@@ -36,6 +36,7 @@ The AltChecker plugin, originally developed by JetDave, has been revamped into a
     "enableCheaterAltKicks": true,
     "roleID": "",
     "rolePingForCheaterAlt": true,
+    "enableDoubleAltPings": true,
     "adminChatChannelID": "your_admin_chat_channel_id"
 }
 ```
