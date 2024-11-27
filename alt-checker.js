@@ -128,23 +128,23 @@ export default class AltChecker extends DiscordBasePlugin {
 
     async unmount() {}
 
-    async onDiscordMessage(message) {
-        if (message.author.id === this.options.discordClient.user.id) return;
+async onDiscordMessage(message) {
+    if (message.author.id === this.options.discordClient.user.id) return;
 
-        const res = await this.onMessage(message.content, false);
+    const res = await this.onMessage(message.content, false);
 
-        if (res === RETURN_TYPE.NO_MATCH) return;
+    if (res === RETURN_TYPE.NO_MATCH) return;
 
-        this.verbose(1, `${message.author.username}#${message.author.discriminator} has requested a discord alt-check: ${message.content}`)
+    this.verbose(1, `${message.author.username}#${message.author.discriminator} has requested a discord alt-check: ${message.content}`);
 
-        const embed = await this.generateDiscordEmbed(res);
+    const embed = await this.generateDiscordEmbed(res);
 
-        if (embed && embed.fields && embed.fields.length > 0) {
-            message.channel.send({ embed: embed });
-        } else {
-            message.channel.send('Player not found on Community Ban List or no alts detected.');
-        }
+    if (embed && embed.fields && embed.fields.length > 0) {
+        message.channel.send({ embeds: [embed] });
+    } else {
+        message.channel.send('No information found for the provided query.');
     }
+}
 
     async onChatMessage(message) {
         if (message.chat != 'ChatAdmin') return;
