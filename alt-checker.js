@@ -12,6 +12,7 @@ const RETURN_TYPE = {
 }
 
 export default class AltChecker extends DiscordBasePlugin {
+    
     static get description() {
         return '';
     }
@@ -140,7 +141,12 @@ export default class AltChecker extends DiscordBasePlugin {
         const embed = await this.generateDiscordEmbed(res);
 
         if (embed && embed.fields && embed.fields.length > 0) {
-            message.channel.send({ embed: embed });
+            try {
+                await message.channel.send({ embeds: [embed] });
+            } catch (error) {
+                this.verbose(1, `Error sending discord message: ${error.message}`);
+                await message.channel.send('An error occurred while processing the alt check.');
+            }
         } else {
             message.channel.send('Player not found on Community Ban List or no alts detected.');
         }
