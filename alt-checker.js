@@ -12,7 +12,6 @@ const RETURN_TYPE = {
 }
 
 export default class AltChecker extends DiscordBasePlugin {
-    
     static get description() {
         return '';
     }
@@ -141,12 +140,7 @@ export default class AltChecker extends DiscordBasePlugin {
         const embed = await this.generateDiscordEmbed(res);
 
         if (embed && embed.fields && embed.fields.length > 0) {
-            try {
-                await message.channel.send({ embeds: [embed] });
-            } catch (error) {
-                this.verbose(1, `Error sending discord message: ${error.message}`);
-                await message.channel.send('An error occurred while processing the alt check.');
-            }
+            message.channel.send({ embed: embed });
         } else {
             message.channel.send('Player not found on Community Ban List or no alts detected.');
         }
@@ -199,71 +193,69 @@ export default class AltChecker extends DiscordBasePlugin {
         return res;
     }
 
-async onPlayerConnected(info) {
-    await delay(3000);
-
-    const res = await this.doAltCheck({ lastIP: info.ip });
-
-    if (!res) return;
-
-    if (res.length <= 1 || res == RETURN_TYPE.PLAYER_NOT_FOUND) return;
-
-    const embed = await this.generateDiscordEmbed(res, true, info.player.name);
-    embed.title = `Alts found for connected player: ${info.player.name}`;
-    embed.description = this.getFormattedUrlsPart(info.player.steamID, info.eosID) + "\n​";
-
-    let shouldKick = false;
-
-    if (this.options.kickIfAltDetected) {
-        shouldKick = true;
-
-        const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID));
-        if (this.options.onlyKickOnlineAlt && !onlineAlt) {
-            shouldKick = false;
+    async onPlayerConnected(info) {
+        await delay(3000);
+    
+        const res = await this.doAltCheck({ lastIP: info.ip });
+    
+        if (!res) return;
+    
+        if (res.length <= 1 || res == RETURN_TYPE.PLAYER_NOT_FOUND) return;
+    
+        const embed = await this.generateDiscordEmbed(res, true, info.player.name);
+        embed.title = `Alts found for connected player: ${info.player.name}`;
+        embed.description = this.getFormattedUrlsPart(info.player.steamID, info.player.eosID) + "\n​";
+    
+        let shouldKick = false;
+    
+        if (this.options.kickIfAltDetected) {
+            shouldKick = true;
+    
+            const onlineAlt = this.server.players.find(p => p.eosID != info.player.eosID && res.find(dbP => dbP.eosID == p.eosID));
+            if (this.options.onlyKickOnlineAlt && !onlineAlt) {
+                shouldKick = false;
+            }
+    
+            if (shouldKick) {
+                this.kick(info.player.eosID, this.options.kickReason);
+            }
         }
-
-        if (shouldKick) {
-            this.kick(info.eosID, this.options.kickReason);
-        }
-    }
-
-    embed.fields.unshift({
-        name: 'Player Kicked?',
-        value: shouldKick ? 'YES' : 'NO'
-    });
-
-    await this.sendDiscordMessage({ embed: embed });
-
-    // Check for double alts online
-    if (this.options.enableDoubleAltPings) {
-        const onlineAlts = res.filter(alt => this.server.players.some(p => p.eosID === alt.eosID));
-        if (onlineAlts.length > 1) {
-            const adminChannel = this.options.discordClient.channels.cache.get(this.options.adminChatChannelID);
-            if (adminChannel) {
-                let adminMessage = {
-                    embed: {
-                        title: 'Double Alts Detected',
-                        color: 15158332, // Red color
-                        fields: [
-                            {
-                                name: `Two alts are currently online:`,
-                                value: onlineAlts.map(alt => `${alt.lastName}\n${this.getFormattedUrlsPart(alt.steamID, alt.eosID)}\n`).join('\n')
-                            }
-                        ]
+    
+        embed.fields.unshift({
+            name: 'Player Kicked?',
+            value: shouldKick ? 'YES' : 'NO'
+        });
+    
+        await this.sendDiscordMessage({ embed: embed });
+    
+        // Check for double alts online
+        if (this.options.enableDoubleAltPings) {
+            const onlineAlts = res.filter(alt => this.server.players.some(p => p.eosID === alt.eosID));
+            if (onlineAlts.length > 1) {
+                const adminChannel = this.options.discordClient.channels.cache.get(this.options.adminChatChannelID);
+                if (adminChannel) {
+                    let adminMessage = {
+                        embed: {
+                            title: 'Double Alts Detected',
+                            color: 15158332, // Red color
+                            fields: [
+                                {
+                                    name: `Two alts are currently online:`,
+                                    value: onlineAlts.map(alt => `${alt.lastName}\n${this.getFormattedUrlsPart(alt.steamID, alt.eosID)}\n`).join('\n')
+                                }
+                            ]
+                        }
+                    };
+    
+                    if (this.options.roleID) {
+                        adminMessage.content = `<@&${this.options.roleID}>`;
                     }
-                };
-
-                if (this.options.roleID) {
-                    adminMessage.content = `<@&${this.options.roleID}>`;
+    
+                    adminChannel.send(adminMessage);
                 }
-
-                adminChannel.send(adminMessage);
             }
         }
     }
-}
-
-
 
     async fetchBattleMetricsBans(identifier) {
         try {
