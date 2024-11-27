@@ -351,8 +351,7 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
             ]
         };
 
-        for (let altK in res) {
-            const alt = res[altK];
+        for (const alt of res) {
             const onlinePlayer = this.server.players.find(p => p.eosID === alt.eosID);
             const isOnlineText = onlinePlayer
                 ? `YES\n**Team: **${onlinePlayer.teamID || 'N/A'} (${onlinePlayer.role?.split('_')[0] || 'N/A'})`
@@ -381,46 +380,17 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
                 }
             }
 
-            if (isPlayerConnected && this.options.enableCheaterAltKicks && banData.cheaterBans > 0) {
-                this.kick(alt.eosID, "Cheater ALT detected. Protection kick");
-
-                const adminChannel = this.options.discordClient.channels.cache.get(this.options.adminChatChannelID);
-                if (adminChannel) {
-                    const adminMessage = {
-                        embeds: [
-                            {
-                                title: 'Cheater ALT detected and kicked',
-                                color: 0xff0000,
-                                fields: [
-                                    {
-                                        name: `User was kicked for having ${res.length - 1} alt(s) with cheater ban`,
-                                        value: `Player: ${playerName}\n${this.getFormattedUrlsPart(alt.steamID, alt.eosID)}\n**SteamID: **\`${alt.steamID || 'N/A'}\`\n**EOS ID: **\`${alt.eosID || 'N/A'}\`\n**Cheater Bans: **${banData.cheaterBans > 0 ? 'Yes' : 'No'}`
-                                    }
-                                ]
-                            }
-                        ]
-                    };
-
-                    if (this.options.rolePingForCheaterAlt && this.options.roleID) {
-                        adminMessage.content = `<@&${this.options.roleID}>`;
-                    }
-
-                    await adminChannel.send(adminMessage);
-                }
-            }
-
             embed.fields.push({
-                name: `​\n${+altK + 1}. ${alt.lastName || 'N/A'}`,
-                value: `${this.getFormattedUrlsPart(alt.steamID, alt.eosID)}\n**SteamID: **\`${alt.steamID || 'N/A'}\`\n**EOS ID: **\`${alt.eosID || 'N/A'}\`\n**Is Online: **${isOnlineText}\n**Bans: **${banData.totalBans || '0'}${this.options.showCheaterBans ? `\n**Cheater Bans: **${banData.cheaterBans > 0 ? 'Yes' : 'No'}` : ''}${cblInfo}`,
+                name: `Alt: ${alt.lastName || 'N/A'}`,
+                value: `SteamID: ${alt.steamID || 'N/A'}\nEOSID: ${alt.eosID || 'N/A'}\nIs Online: ${isOnlineText}\nBans: ${banData.totalBans || '0'}${this.options.showCheaterBans ? `\nCheater Bans: ${banData.cheaterBans > 0 ? 'Yes' : 'No'}` : ''}${cblInfo}`,
                 inline: false
             });
         }
 
-        embed.description = embed.description || "Alts found.";
+        embed.description = "Alts found for the IP.";
     } else {
         const mainPlayer = res[0];
         let banData = { totalBans: 0, cheaterBans: 0 };
-        let cblFields = [];
         let cblInfo = '';
 
         try {
@@ -433,95 +403,35 @@ async generateDiscordEmbed(res, isPlayerConnected = false, playerName = '') {
             try {
                 const cblData = await this.fetchCommunityBanListInfo(mainPlayer.steamID);
                 if (cblData) {
-                    cblFields = [
-                        { name: 'Reputation Points', value: `${cblData.reputationPoints || '0'}`, inline: true },
-                        { name: 'Risk Rating', value: `${cblData.riskRating || '0'} / 10`, inline: true },
-                        { name: 'Reputation Rank', value: `#${cblData.reputationRank || '0'}`, inline: true },
-                        { name: 'Active Bans', value: `${cblData.activeBans.edges.length || '0'}`, inline: true },
-                        { name: 'Expired Bans', value: `${cblData.expiredBans.edges.length || '0'}`, inline: true }
-                    ];
+                    cblInfo = `\n**Reputation Points: **${cblData.reputationPoints || '0'}\n**Risk Rating: **${cblData.riskRating || '0'} / 10\n**Reputation Rank: **#${cblData.reputationRank || '0'}\n**Active Bans: **${cblData.activeBans.edges.length || '0'}\n**Expired Bans: **${cblData.expiredBans.edges.length || '0'}`;
                 } else {
-                    cblInfo = 'Player not found on Community Ban List';
+                    cblInfo = '\n**Player not found on Community Ban List**';
                 }
             } catch (error) {
                 this.verbose(1, `Error fetching CBL data: ${error.message}`);
-                cblInfo = 'Error fetching CBL data';
+                cblInfo = '\n**Error fetching CBL data**';
             }
         }
 
         embed = {
-            title: `${mainPlayer.lastName} doesn't have alts!`,
+            title: `${mainPlayer.lastName || 'Player'} doesn't have alts!`,
             color: 0x00ff00,
             description: this.getFormattedUrlsPart(mainPlayer.steamID, mainPlayer.eosID),
             fields: [
-                { name: 'SteamID', value: `${mainPlayer.steamID || 'N/A'}`, inline: true },
-                { name: 'EOSID', value: `${mainPlayer.eosID || 'N/A'}`, inline: true },
-                { name: 'Name', value: `${mainPlayer.lastName || 'N/A'}`, inline: true },
-                { name: 'IP', value: `${mainPlayer.lastIP || 'N/A'}`, inline: true },
+                { name: 'SteamID', value: mainPlayer.steamID || 'N/A', inline: true },
+                { name: 'EOSID', value: mainPlayer.eosID || 'N/A', inline: true },
+                { name: 'Name', value: mainPlayer.lastName || 'N/A', inline: true },
+                { name: 'IP', value: mainPlayer.lastIP || 'N/A', inline: true },
                 { name: 'Bans', value: `${banData.totalBans || '0'}`, inline: true },
-                { name: 'Cheater Bans', value: `${this.options.showCheaterBans ? `${banData.cheaterBans > 0 ? 'Yes' : 'No'}` : 'N/A'}`, inline: true },
-                { name: 'Community Ban List Info', value: '--------------------------------', inline: false },
-                ...cblFields
+                { name: 'Cheater Bans', value: `${this.options.showCheaterBans ? (banData.cheaterBans > 0 ? 'Yes' : 'No') : 'N/A'}`, inline: true },
+                { name: 'Community Ban List Info', value: cblInfo || 'N/A', inline: false }
             ]
         };
-
-        if (cblInfo) {
-            embed.fields.push({ name: 'Community Ban List Info', value: cblInfo, inline: false });
-        }
     }
 
     return embed;
 }
 
-
-        embed = {
-            title: `${mainPlayer.lastName} doesn't have alts!`,
-            color: 0x00ff00,
-            description: this.getFormattedUrlsPart(mainPlayer.steamID, mainPlayer.eosID),
-            fields: [
-                { name: 'SteamID', value: `${mainPlayer.steamID || 'N/A'}`, inline: true },
-                { name: 'EOSID', value: `${mainPlayer.eosID || 'N/A'}`, inline: true },
-                { name: 'Name', value: `${mainPlayer.lastName || 'N/A'}`, inline: true },
-                { name: 'IP', value: `${mainPlayer.lastIP || 'N/A'}`, inline: true },
-                { name: 'Bans', value: `${banData.totalBans || '0'}`, inline: true },
-                { name: 'Cheater Bans', value: `${this.options.showCheaterBans ? `${banData.cheaterBans > 0 ? 'Yes' : 'No'}` : 'N/A'}`, inline: true },
-                { name: 'Community Ban List Info', value: '--------------------------------', inline: false },
-                ...cblFields
-            ]
-        };
-
-        if (cblInfo) {
-            embed.fields.push({ name: 'Community Ban List Info', value: cblInfo, inline: false });
-        }
-    }
-
-    return embed;
-}
-
-
-            embed = {
-                title: `${mainPlayer.lastName} doesn't have alts!`,
-                color: '00FF00',
-                description: this.getFormattedUrlsPart(mainPlayer.steamID, mainPlayer.eosID),
-                fields: [
-                    { name: 'SteamID', value: `${mainPlayer.steamID || '0'}`, inline: true },
-                    { name: 'EOSID', value: `${mainPlayer.eosID || '0'}`, inline: true },
-                    { name: 'Name', value: `${mainPlayer.lastName || '0'}`, inline: true },
-                    { name: 'IP', value: `${mainPlayer.lastIP || '0'}`, inline: true },
-                    { name: 'Bans', value: `${banData.totalBans || '0'}`, inline: true },
-                    { name: 'Cheater Bans', value: `${this.options.showCheaterBans ? `${banData.cheaterBans > 0 ? 'Yes' : 'No'}` : 'N/A'}`, inline: true },
-                    { name: 'Community Ban List Info', value: '--------------------------------', inline: false },
-                    ...cblFields
-                ]
-            };
-
-            if (cblInfo) {
-                embed.fields.push({ name: 'Community Ban List Info', value: cblInfo, inline: false });
-            }
-        }
-
-        return embed;
-    }
 
 
     async doAltCheck(matchGroups) {
