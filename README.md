@@ -1,3 +1,5 @@
+# THIS IS NO LONGER MAINTAINED AS OF JAN 2025
+
 # AltChecker Plugin
 
 The AltChecker plugin, originally developed by JetDave, has been revamped into a  Discord and game server integration tool. This refactored version was created to detect alternate accounts, identify cheater bans, and efficiently managing player interactions. By integrating BattleMetrics and the Community Ban List, the updated plugin offers better alt-checking capabilities, ensuring a more secure and well-regulated environment.
