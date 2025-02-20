@@ -334,12 +334,12 @@ export default class AltChecker extends DiscordBasePlugin {
             embed = {
                 title: `Unable to find player`,
                 description: `Player hasn't been found in the database!`,
-                color: 'ff9900',
+                color: 0xFF9900,
             }
         } else if (res.length > 1) {
             embed = {
                 title: `Alts for IP: ${res[0].lastIP}`,
-                color: 'FF0000',
+                color: 0xFF0000,
                 fields: [{
                     name: 'IP',
                     value: res[0].lastIP || 'N/A',
