@@ -140,9 +140,11 @@ export default class AltChecker extends DiscordBasePlugin {
         const embed = await this.generateDiscordEmbed(res);
 
         if (embed && embed.fields && embed.fields.length > 0) {
-            message.channel.send({ embed: embed });
+            await message.channel.send({ embeds: [embed] });
+        } else if (embed) { 
+            await message.channel.send({ embeds: [embed], content: 'Here is the result:' });
         } else {
-            message.channel.send('Player not found on Community Ban List or no alts detected.');
+            await message.channel.send('No information found for the provided query.');
         }
     }
 
@@ -334,7 +336,7 @@ export default class AltChecker extends DiscordBasePlugin {
             embed = {
                 title: `Unable to find player`,
                 description: `Player hasn't been found in the database!`,
-                color: 0xFF9900,
+                color: 'ff9900',
             }
         } else if (res.length > 1) {
             embed = {
@@ -477,7 +479,7 @@ export default class AltChecker extends DiscordBasePlugin {
 
             embed = {
                 title: `${mainPlayer.lastName} doesn't have alts!`,
-                color: '00FF00',
+                color: 0x00FF00,
                 description: this.getFormattedUrlsPart(mainPlayer.steamID, mainPlayer.eosID),
                 fields: [
                     { name: 'SteamID', value: `${mainPlayer.steamID || '0'}`, inline: true },
@@ -573,4 +575,49 @@ export default class AltChecker extends DiscordBasePlugin {
             group: ['eosID']
         });
     }
+
+    async sendDiscordEmbeds(embedData) {
+        const maxCharacters = 5500; // Safe character limit
+        const maxFieldsPerEmbed = 10; // Safe field limit
+        const channel = this.options.discordClient.channels.cache.get(this.options.channelID);
+    
+        let currentFields = [];
+        let currentLength = 0;
+        let pageNumber = 1;
+        const totalPages = Math.ceil(embedData.fields.length / maxFieldsPerEmbed);
+    
+        for (const field of embedData.fields) {
+            const fieldLength = (field.name?.length || 0) + (field.value?.length || 0);
+    
+            if (currentLength + fieldLength > maxCharacters || currentFields.length >= maxFieldsPerEmbed) {
+                // Send the current embed
+                await channel.send({
+                    embed: {
+                        title: `${embedData.title} (Page ${pageNumber}/${totalPages})`,
+                        color: embedData.color,
+                        fields: currentFields
+                    }
+                });
+    
+                // Reset for the next embed
+                currentFields = [];
+                currentLength = 0;
+                pageNumber++;
+            }
+    
+            currentFields.push(field);
+            currentLength += fieldLength;
+        }
+    
+        // Send any remaining fields
+        if (currentFields.length > 0) {
+            await channel.send({
+                embed: {
+                    title: `${embedData.title} (Page ${pageNumber}/${totalPages})`,
+                    color: embedData.color,
+                    fields: currentFields
+                }
+            });
+        }
+    }    
 }
